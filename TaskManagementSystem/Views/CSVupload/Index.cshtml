@@ -1,0 +1,189 @@
+﻿@model CSVUser
+
+<div class="container mt-4">
+    <h2>User Import from CSV/Excel</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Step 1: Upload File</h5>
+                    <form asp-action="UploadExcel" method="post" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label class="form-label">Select CSV/Excel File</label>
+                                    <input type="file" name="file" class="form-control" accept=".csv,.xlsx,.xls" required />
+                                    <small class="form-text text-muted">Supported formats: CSV, Excel (.xlsx, .xls)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div class="mb-3 d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-eye"></i> Preview Data
+                                    </button>
+                                    <a asp-action="DownloadTemplate" asp-controller="CSVupload" class="btn btn-outline-secondary">
+                                        <i class="fas fa-download"></i> Download Template
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model != null && (Model.MatchedUsers.Any() || Model.NonMatchedUsers.Any()))
+    {
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Step 2: Review & Import</h5>
+                        <div class="alert alert-info">
+                            <strong>Preview Results:</strong>
+                            <span class="badge bg-success">@Model.NonMatchedUsers.Count New Users</span>
+                            <span class="badge bg-warning">@Model.MatchedUsers.Count Existing Users (Will be Updated)</span>
+                        </div>
+
+                        <form asp-action="ImportUsers" method="post">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-upload"></i> Confirm & Import All Users
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-plus"></i> New Users (@Model.NonMatchedUsers.Count)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.NonMatchedUsers.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>UserName</th>
+                                            <th>Email</th>
+                                            <th>Contact</th>
+                                            <th>Role ID</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (int i = 0; i < Model.NonMatchedUsers.Count; i++)
+                                        {
+                                            var u = Model.NonMatchedUsers[i];
+                                            <tr class="table-success">
+                                                <td>@(i + 1)</td>
+                                                <td>@u.UserName</td>
+                                                <td>@u.Email</td>
+                                                <td>@u.Contact</td>
+                                                <td>@u.RoleId</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No new users to add.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-edit"></i> Existing Users (Will be Updated) (@Model.MatchedUsers.Count)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.MatchedUsers.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>UserName</th>
+                                            <th>Email</th>
+                                            <th>Contact</th>
+                                            <th>Role ID</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (int i = 0; i < Model.MatchedUsers.Count; i++)
+                                        {
+                                            var u = Model.MatchedUsers[i];
+                                            <tr class="table-warning">
+                                                <td>@(i + 1)</td>
+                                                <td>@u.UserName</td>
+                                                <td>@u.Email</td>
+                                                <td>@u.Contact</td>
+                                                <td>@u.RoleId</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No existing users found.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Model != null)
+    {
+        <div class="alert alert-warning mt-4">
+            <i class="fas fa-exclamation-triangle"></i> No users found in the uploaded file.
+        </div>
+    }
+</div>
+
+<style>
+    .card {
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .table-responsive {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>

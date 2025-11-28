@@ -14,8 +14,8 @@ namespace TaskManagementSystem.Models
         public string? CreatedBy { get; set; }
         public string? UpdatedBy { get; set; }
         public string? PhotoPath { get; set; }
-        public int? RoleId { get; set; }                   // Foreign key
-        public Role? Role { get; set; }                    // Navigation property to Role
+        public int? RoleId { get; set; }                  
+        public Role? Role { get; set; }               
     }
 }
 

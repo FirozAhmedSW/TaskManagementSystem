@@ -18,18 +18,23 @@ namespace TaskManagementSystem.Controllers
             _context = context;
             _activityLogger = activityLogger;
         }
-
-        // GET: Menu
         public async Task<IActionResult> Index(string? search, int page = 1)
         {
             var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
+
+            // Log search text
             if (!string.IsNullOrWhiteSpace(search))
             {
-                await _activityLogger.LogAsync(userName, "Search Menu", $"User '{userName}' searched for '{search}'.");
+                await _activityLogger.LogAsync(userName, "Search Menu",
+                    $"User '{userName}' searched for '{search}'.");
             }
 
-            var query = _context.Menus.AsQueryable();
+            // Base query: Only non-deleted menus
+            var query = _context.Menus
+                .Where(m => m.IsDeleted == false)
+                .AsQueryable();
 
+            // Apply search filter
             if (!string.IsNullOrWhiteSpace(search))
             {
                 query = query.Where(m =>
@@ -38,16 +43,19 @@ namespace TaskManagementSystem.Controllers
                     (m.ActionName ?? "").Contains(search)
                 );
             }
+
+            // Count for pagination
             var totalCount = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(totalCount / (double)PageSize);
 
+            // Apply pagination
             var menus = await query
                 .OrderBy(m => m.Id)
                 .Skip((page - 1) * PageSize)
                 .Take(PageSize)
                 .ToListAsync();
 
-            ViewBag.MenuParents = 1;
+            // Send data to View
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = totalPages;
             ViewBag.TotalCount = totalCount;
@@ -55,6 +63,9 @@ namespace TaskManagementSystem.Controllers
 
             return View(menus);
         }
+
+
+
         [HttpPost]
         public async Task<IActionResult> ToggleActive(int id, bool isActive)
         {
@@ -151,35 +162,28 @@ namespace TaskManagementSystem.Controllers
             return View(menu);
         }
 
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-                return NotFound();
-
-            var menu = await _context.Menus.FindAsync(id);
-            if (menu == null)
-                return NotFound();
-
-            return View(menu);
-        }
-
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        [HttpPost]
+        public async Task<IActionResult> Delete(int id)
         {
             var menu = await _context.Menus.FindAsync(id);
             if (menu != null)
             {
-                _context.Menus.Remove(menu);
+                // Soft delete
+                menu.IsDeleted = true;
+                _context.Menus.Update(menu);
                 await _context.SaveChangesAsync();
+
+                // Logging
                 var userName = HttpContext.Session.GetString("UserName") ?? "Unknown";
-                string actionType = "Delete Menu";
-                string logMessage = $"User '{userName}' deleted menu: '{menu.Title}' (ID: {menu.Id}).";
+                string actionType = "Soft Delete Menu";
+                string logMessage = $"User '{userName}' soft deleted menu: '{menu.Title}' (ID: {menu.Id}).";
                 await _activityLogger.LogAsync(userName, actionType, logMessage);
             }
 
             return RedirectToAction(nameof(Index));
         }
+
+
 
         private void LoadParentMenus(int? excludeId = null)
         {
